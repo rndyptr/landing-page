@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AEROMAP — Pemantauan Kualitas Udara PM2.5 Kampus Unpad Jatinangor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:      #070E13;
+    --bg-mid:       #0B161C;
+    --surface:      rgba(255,255,255,0.04);
+    --surface-2:    rgba(255,255,255,0.065);
+    --glass-border: rgba(255,255,255,0.09);
+    --line:         rgba(255,255,255,0.07);
+
+    --text:         #EAF4F1;
+    --text-dim:     #8CA6A2;
+    --text-faint:   #536663;
+
+    --glow:         #49E6C4;
+    --glow-dim:     rgba(73,230,196,0.14);
+    --pm:           #F2A93E;
+    --pm-dim:       rgba(242,169,62,0.14);
+    --temp:         #FF6F5C;
+    --temp-dim:     rgba(255,111,92,0.14);
+    --hum:          #4FC6EA;
+    --hum-dim:      rgba(79,198,234,0.14);
+    --danger:       #FF5A6E;
+    --danger-dim:   rgba(255,90,110,0.14);
+
+    --font-display: 'Space Grotesk', 'Inter', sans-serif;
+    --font-ui:      'Inter', -apple-system, sans-serif;
+    --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+
+  body{
+    background:
+      radial-gradient(1100px 700px at 15% -10%, rgba(73,230,196,0.10), transparent 60%),
+      radial-gradient(900px 600px at 100% 0%, rgba(242,169,62,0.07), transparent 55%),
+      linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-mid) 100%);
+    color: var(--text);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+
+  @keyframes riseIn{
+    from{ opacity:0; transform: translateY(14px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  .rise{ animation: riseIn 0.7s cubic-bezier(.2,.8,.2,1) both; }
+
+  .wrap{ max-width: 1200px; margin: 0 auto; padding: 0 22px 90px; position: relative; z-index: 1; }
+
+  /* ---------- NAVBAR ---------- */
+  nav.topnav{
+    position: sticky; top:0; z-index: 50;
+    padding: 14px 22px;
+    background: rgba(7,14,19,0.72);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner{ max-width:1200px; margin:0 auto; width:100%; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+  .brand{ display:flex; align-items:center; gap: 12px; text-decoration:none; }
+  .brand-mark{
+    width: 36px; height: 36px; border-radius: 10px;
+    background: conic-gradient(from 210deg, var(--glow), var(--pm), var(--hum), var(--glow));
+    display:flex; align-items:center; justify-content:center;
+    position:relative; box-shadow: 0 0 20px rgba(73,230,196,0.35); flex-shrink:0;
+  }
+  .brand-mark::after{ content:''; position:absolute; inset:3px; border-radius:8px; background: var(--bg-deep); }
+  .brand-mark span{ position:relative; z-index:1; font-family: var(--font-display); font-weight:700; font-size:14px; color:var(--text); }
+  .brand-text{ font-family: var(--font-display); font-size: 16px; font-weight:700; color: var(--text); }
+
+  .nav-links{ display:flex; align-items:center; gap: 4px; flex-wrap:wrap; }
+  .nav-links a{
+    font-size: 13px; font-weight:500; color: var(--text-dim); text-decoration:none;
+    padding: 8px 13px; border-radius: 100px; transition: all 0.15s ease;
+  }
+  .nav-links a:hover{ color: var(--text); background: var(--surface); }
+  .nav-cta{
+    display:inline-flex; align-items:center; gap:7px;
+    font-family: var(--font-ui); font-size: 13px; font-weight:600; color: var(--bg-deep);
+    background: var(--glow); border-radius:100px; padding: 9px 16px; text-decoration:none;
+    box-shadow: 0 0 20px rgba(73,230,196,0.3); transition: transform 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+  }
+  .nav-cta:hover{ transform: translateY(-1px); box-shadow: 0 4px 26px rgba(73,230,196,0.45); }
+
+  @media (max-width: 820px){
+    .nav-links{ display:none; }
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{ padding: 70px 4px 40px; text-align:center; }
+  .hero-eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform:uppercase;
+    color: var(--glow); background: var(--glow-dim); border: 1px solid rgba(73,230,196,0.3);
+    padding: 7px 14px; border-radius: 100px; margin-bottom: 22px;
+  }
+  .hero-dot{ width:6px; height:6px; border-radius:50%; background: var(--glow); animation: pulse 2.2s ease-in-out infinite; }
+  @keyframes pulse{
+    0%,100%{ box-shadow: 0 0 0 0 rgba(73,230,196,0.55); }
+    50%{ box-shadow: 0 0 0 6px rgba(73,230,196,0); }
+  }
+  .hero h1{
+    font-family: var(--font-display); font-weight:700; letter-spacing:-0.01em;
+    font-size: clamp(30px, 5vw, 52px); line-height:1.12; max-width: 820px; margin: 0 auto 18px;
+    background: linear-gradient(100deg, var(--text) 25%, var(--glow) 65%, var(--pm) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p{ font-size: 16px; color: var(--text-dim); max-width: 620px; margin: 0 auto 32px; line-height:1.65; }
+  .hero-actions{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn-primary{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family: var(--font-ui); font-size: 14px; font-weight:600; color: var(--bg-deep);
+    background: var(--glow); border-radius:100px; padding: 13px 24px; text-decoration:none;
+    box-shadow: 0 0 26px rgba(73,230,196,0.32); transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn-primary:hover{ transform: translateY(-1px); box-shadow: 0 6px 30px rgba(73,230,196,0.45); }
+  .btn-secondary{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family: var(--font-ui); font-size: 14px; font-weight:600; color: var(--text);
+    background: var(--surface); border: 1px solid var(--glass-border); border-radius:100px;
+    padding: 13px 24px; text-decoration:none; transition: all 0.15s ease;
+  }
+  .btn-secondary:hover{ border-color: var(--glow); box-shadow: 0 0 18px rgba(73,230,196,0.15); }
+
+  .hero-stats{
+    display:grid; grid-template-columns: repeat(4,1fr); gap:14px; max-width: 900px; margin: 52px auto 0;
+  }
+  .hero-stat{
+    background: linear-gradient(165deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--glass-border); border-radius: 14px; padding: 18px 14px;
+    backdrop-filter: blur(14px);
+  }
+  .hero-stat b{ display:block; font-family: var(--font-display); font-size: 22px; color: var(--glow); margin-bottom:4px; }
+  .hero-stat span{ font-size: 11px; color: var(--text-faint); text-transform:uppercase; letter-spacing:0.05em; }
+
+  @media (max-width: 700px){
+    .hero-stats{ grid-template-columns: repeat(2,1fr); }
+  }
+
+  /* ---------- HERO — SENSING VIBE ---------- */
+  .hero{ position: relative; overflow: visible; }
+
+  .hero-grid-bg{
+    position: absolute; inset: -40px -20px auto -20px;
+    height: 520px;
+    background-image:
+      linear-gradient(rgba(73,230,196,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(73,230,196,0.06) 1px, transparent 1px);
+    background-size: 34px 34px;
+    mask-image: radial-gradient(600px 380px at 50% 30%, black 40%, transparent 85%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .hero-corner{
+    position: absolute; width: 22px; height: 22px;
+    border: 1.5px solid rgba(73,230,196,0.45);
+    pointer-events: none; z-index: 0;
+  }
+  .hero-corner.tl{ top: -10px; left: 6%;  border-right:none; border-bottom:none; }
+  .hero-corner.tr{ top: -10px; right: 6%; border-left:none;  border-bottom:none; }
+  .hero-corner.bl{ bottom: 60px; left: 6%;  border-right:none; border-top:none; }
+  .hero-corner.br{ bottom: 60px; right: 6%; border-left:none;  border-top:none; }
+
+  .hero-sensor{
+    position: absolute; z-index: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    animation: sensorFloat 5s ease-in-out infinite;
+  }
+  .hero-sensor img{
+    width: 108px; height: auto;
+    border-radius: 12px;
+    filter: drop-shadow(0 16px 26px rgba(0,0,0,0.5));
+  }
+  .hero-sensor.left{  top: 40px;   left: -2%;  animation-delay: 0s; }
+  .hero-sensor.right{ top: 120px;  right: -1%; animation-delay: -2.4s; }
+  .hero-sensor.top{
+    top: 300px; left: 6%; right: auto;
+    z-index: 0; opacity: 0.85; animation-delay: -1.2s;
+  }
+  .hero-sensor.top img{ width: 120px; }
+  .hero-sensor.top .hero-sensor-readout{
+    color: var(--pm); border-color: rgba(242,169,62,0.3);
+  }
+  .hero-sensor.top .hero-sensor-readout .rdot{ background: var(--pm); }
+  @media (max-width: 980px){ .hero-sensor{ display:none; } }
+
+  @keyframes sensorFloat{
+    0%,100%{ transform: translateY(0px); }
+    50%{ transform: translateY(-10px); }
+  }
+  @keyframes sensorFloatTop{
+    0%,100%{ transform: translateX(-50%) translateY(0px); }
+    50%{ transform: translateX(-50%) translateY(-8px); }
+  }
+
+  .hero-sensor-readout{
+    display:flex; align-items:center; gap:6px;
+    font-family: var(--font-mono); font-size: 10.5px; color: var(--glow);
+    background: rgba(7,14,19,0.65); border: 1px solid rgba(73,230,196,0.3);
+    padding: 4px 10px; border-radius: 100px; white-space: nowrap;
+    backdrop-filter: blur(6px);
+  }
+  .hero-sensor-readout .rdot{
+    width:5px; height:5px; border-radius:50%; background: var(--glow);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .hero-sensor.right .hero-sensor-readout{ color: var(--hum); border-color: rgba(79,198,234,0.3); }
+  .hero-sensor.right .hero-sensor-readout .rdot{ background: var(--hum); }
+
+  .hero-eyebrow, .hero h1, .hero p, .hero-actions, .hero-stats{
+    position: relative; z-index: 2;
+  }
+
+  /* ---------- SECTION SHELL ---------- */
+  section.block{ padding: 78px 4px 0; scroll-margin-top: 90px; }
+  .block-eyebrow{
+    font-family: var(--font-mono); font-size: 11px; letter-spacing:0.08em; text-transform:uppercase;
+    color: var(--pm); margin-bottom: 10px;
+  }
+  .block-title{
+    font-family: var(--font-display); font-size: clamp(24px,3.2vw,32px); font-weight:700; margin-bottom: 14px;
+  }
+  .block-desc{ font-size: 15px; color: var(--text-dim); max-width: 680px; line-height:1.7; margin-bottom: 40px; }
+
+  .panel{
+    background: linear-gradient(165deg, var(--surface-2), var(--surface));
+    backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    padding: 26px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .panel:hover{ transform: translateY(-2px); border-color: rgba(73,230,196,0.25); }
+
+  /* ---------- INTRO / PROBLEM ---------- */
+  .intro-grid{ display:grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; }
+  .intro-copy p{ font-size:14.5px; color: var(--text-dim); line-height:1.75; margin-bottom:14px; }
+  .intro-copy b{ color: var(--text); font-weight:600; }
+  .pm-scale{ display:flex; flex-direction:column; gap:10px; margin-top:18px; }
+  .pm-row{ display:flex; align-items:center; gap:12px; font-size:12.5px; }
+  .pm-swatch{ width:12px; height:12px; border-radius:3px; flex-shrink:0; }
+  .pm-row span:last-child{ color: var(--text-faint); margin-left:auto; font-family: var(--font-mono); font-size:11.5px; }
+
+  .problem-card{
+    display:flex; flex-direction:column; height:100%;
+    padding:0; overflow:visible;
+    background:none; backdrop-filter:none; border:none; box-shadow:none;
+  }
+  .problem-card:hover{ transform:none; border-color:transparent; }
+
+  /* ---- Stat Image Carousel (fade, no box) ---- */
+  .stat-carousel{
+    position: relative;
+    overflow: hidden;
+    background: transparent;
+    flex: 1 1 auto;
+    min-height: 220px;
+    width: 100%;
+    height: 100%;
+  }
+  .stat-track{
+    position: relative;
+    height: 100%;
+    width: 100%;
+  }
+  .stat-slide{
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 1.1s ease;
+    pointer-events: none;
+  }
+  .stat-slide.active{
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .stat-slide img{
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  @media (max-width: 860px){ .intro-grid{ grid-template-columns: 1fr; } }
+
+  /* ---------- TECH STACK ---------- */
+  .stack-grid{ display:grid; grid-template-columns: repeat(4,1fr); gap:14px; }
+  .stack-card{ display:flex; flex-direction:column; gap:10px; }
+  .stack-icon{
+    width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    background: var(--glow-dim); color: var(--glow); border: 1px solid rgba(73,230,196,0.25);
+  }
+  .stack-card h4{ font-family: var(--font-display); font-size:14.5px; font-weight:600; }
+  .stack-card p{ font-size:12.5px; color: var(--text-faint); line-height:1.6; }
+  .stack-tag{
+    display:inline-block; font-family:var(--font-mono); font-size:10px; color:var(--text-faint);
+    background: rgba(255,255,255,0.04); border:1px solid var(--glass-border);
+    padding: 3px 8px; border-radius:6px; margin-top:2px; width:fit-content;
+  }
+  @media (max-width: 900px){ .stack-grid{ grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 520px){ .stack-grid{ grid-template-columns: 1fr; } }
+
+  /* ---------- TIM ---------- */
+  .team-grid{ display:grid; grid-template-columns: repeat(4,1fr); gap:14px; }
+  .team-card{ text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .team-avatar{
+    width:64px; height:64px; border-radius:50%;
+    background: conic-gradient(from 200deg, var(--glow), var(--hum), var(--pm), var(--glow));
+    display:flex; align-items:center; justify-content:center; position:relative;
+  }
+  .team-avatar::after{ content:''; position:absolute; inset:3px; border-radius:50%; background: var(--bg-mid); }
+  .team-avatar span{ position:relative; z-index:1; font-family:var(--font-display); font-weight:700; font-size:18px; }
+  .team-card h4{ font-family: var(--font-display); font-size:14.5px; font-weight:600; }
+  .team-role{
+    font-size:11px; color: var(--glow); background: var(--glow-dim); border:1px solid rgba(73,230,196,0.25);
+    padding:3px 10px; border-radius:100px;
+  }
+  .team-card.supervisor .team-role{ color: var(--pm); background: var(--pm-dim); border-color: rgba(242,169,62,0.3); }
+  .team-card.supervisor .team-avatar{ background: conic-gradient(from 200deg, var(--pm), var(--temp), var(--pm)); }
+  .team-desc{ font-size:12px; color: var(--text-faint); line-height:1.5; }
+  @media (max-width: 900px){ .team-grid{ grid-template-columns: repeat(2,1fr); } }
+
+  /* ---------- FITUR ---------- */
+  .feature-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap:14px; }
+  .feature-card{ display:flex; flex-direction:column; gap:12px; }
+  .feature-icon{
+    width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center;
+    background: var(--hum-dim); color: var(--hum); border: 1px solid rgba(79,198,234,0.28);
+  }
+  .feature-card h4{ font-family: var(--font-display); font-size:15px; font-weight:600; }
+  .feature-card p{ font-size:13px; color: var(--text-dim); line-height:1.65; }
+  @media (max-width: 900px){ .feature-grid{ grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 560px){ .feature-grid{ grid-template-columns: 1fr; } }
+
+  /* ---------- HARDWARE ---------- */
+  .hw-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:18px; align-items:stretch; }
+  .hw-diagram{
+    display:flex; flex-direction:column; gap:10px; justify-content:center;
+  }
+  .hw-node{
+    display:flex; align-items:center; gap:12px;
+    background: rgba(255,255,255,0.03); border:1px solid var(--glass-border);
+    border-radius:12px; padding:12px 14px;
+  }
+  .hw-node .dot{ width:9px; height:9px; border-radius:50%; background: var(--glow); flex-shrink:0; box-shadow:0 0 10px rgba(73,230,196,0.6); }
+  .hw-node b{ font-size:13px; font-weight:600; display:block; }
+  .hw-node span{ font-size:11.5px; color: var(--text-faint); }
+  .hw-arrow{ font-family:var(--font-mono); color: var(--text-faint); text-align:center; font-size:12px; }
+  .hw-spec-list{ list-style:none; display:flex; flex-direction:column; gap:12px; }
+  .hw-spec-list li{ display:flex; justify-content:space-between; gap:10px; font-size:13px; padding-bottom:12px; border-bottom:1px dashed var(--line); }
+  .hw-spec-list li span:first-child{ color: var(--text-dim); }
+  .hw-spec-list li b{ font-family: var(--font-mono); font-size:12.5px; color: var(--text); text-align:right; }
+  @media (max-width: 860px){ .hw-grid{ grid-template-columns: 1fr; } }
+
+  /* ---------- PURWARUPA 3D VIEWER ---------- */
+  .proto-grid{ display:grid; grid-template-columns: 1.05fr 0.95fr; gap:18px; align-items:stretch; }
+  .proto-stage{
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+    min-height: 380px;
+    perspective: 1200px;
+    cursor: grab;
+    user-select:none;
+    overflow:hidden;
+  }
+  .proto-stage.dragging{ cursor: grabbing; }
+  .proto-stage::before{
+    content:'';
+    position:absolute; inset:0;
+    background: radial-gradient(320px 220px at 50% 55%, rgba(73,230,196,0.10), transparent 70%);
+    pointer-events:none;
+  }
+  .proto-card{
+  width: 240px; height: 300px;
+  transform-style: preserve-3d;
+  will-change: transform;
+  }
+  .proto-card canvas{ width:100%; height:100%; display:block; }
+  .proto-card img{
+    width:100%; height:100%; object-fit:contain;
+    filter: drop-shadow(0 30px 40px rgba(0,0,0,0.55));
+    pointer-events:none;
+    -webkit-user-drag:none;
+  }
+  .proto-hint{
+    position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
+    display:flex; align-items:center; gap:7px;
+    font-family: var(--font-mono); font-size:10.5px; color: var(--text-faint);
+    background: rgba(0,0,0,0.35); border:1px solid var(--glass-border);
+    padding:6px 12px; border-radius:100px; pointer-events:none;
+    transition: opacity 0.3s ease;
+  }
+  .proto-hint svg{ flex-shrink:0; }
+  .proto-reset{
+    position:absolute; top:14px; right:14px;
+    display:flex; align-items:center; gap:6px;
+    font-family: var(--font-ui); font-size:11.5px; font-weight:600; color: var(--text);
+    background: var(--surface); border:1px solid var(--glass-border); border-radius:100px;
+    padding:7px 12px; cursor:pointer; transition: all 0.15s ease;
+  }
+  .proto-reset:hover{ border-color: var(--glow); color: var(--glow); }
+  .proto-info{ display:flex; flex-direction:column; gap:14px; justify-content:center; }
+  .proto-info h4{ font-family: var(--font-display); font-size:16px; font-weight:600; }
+  .proto-info p{ font-size:13.5px; color: var(--text-dim); line-height:1.7; }
+  .proto-spec{ display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+  .proto-spec-row{ display:flex; justify-content:space-between; gap:10px; font-size:12.5px; padding-bottom:10px; border-bottom:1px dashed var(--line); }
+  .proto-spec-row span:first-child{ color: var(--text-faint); }
+  .proto-spec-row b{ font-family: var(--font-mono); font-size:12px; color: var(--text); text-align:right; }
+  @media (max-width: 860px){ .proto-grid{ grid-template-columns: 1fr; } }
+
+  footer{
+    margin-top: 90px; padding: 26px 4px; border-top: 1px solid var(--line);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    font-size:12px; color: var(--text-faint);
+  }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="nav-inner">
+    <a href="index.html" class="brand">
+      <div class="brand-mark"><span>A</span></div>
+      <div class="brand-text">AEROMAP</div>
+    </a>
+    <div class="nav-links">
+      <a href="#introduction">Introduction</a>
+      <a href="#fitur">Feature</a>
+      <a href="#purwarupa">Prototype</a>
+      <a href="#hardware">Hardware</a>
+      <a href="#tech-stack">Tech Stack</a>
+      <a href="#tim">Tim Pengembang</a>
+    </div>
+    <a href="dashboard.html" class="nav-cta">
+      Dashboard
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m0 0l-6-6m6 6l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- ================= HERO ================= -->
+  <section class="hero rise">
+    <div class="hero-eyebrow"><span class="hero-dot"></span>Sistem Pemantauan Kualitas Udara Real-Time</div>
+
+    <div class="hero-grid-bg"></div>
+
+    <div class="hero-corner tl"></div>
+    <div class="hero-corner tr"></div>
+    <div class="hero-corner bl"></div>
+    <div class="hero-corner br"></div>
+
+    <div class="hero-sensor left">
+      <img src="zh03bisometric.png" alt="Sensor PM2.5 ZH03B">
+      <div class="hero-sensor-readout"><span class="rdot"></span>ZH03B · PM2.5 24 µg/m³</div>
+    </div>
+
+    <div class="hero-sensor right">
+      <img src="sht31isometric.png" alt="Sensor suhu kelembapan SHT31">
+      <div class="hero-sensor-readout"><span class="rdot"></span>SHT31 · 27.4°C / 68% RH</div>
+    </div>
+
+    <div class="hero-sensor top">
+      <img src="geom8n-isometric.png" alt="Modul GPS NEO-M8N">
+      <div class="hero-sensor-readout"><span class="rdot"></span>NEO-M8N · Fix 6 sat</div>
+    </div>
+
+    <h1>Memetakan Kualitas Udara PM2.5 di Kampus Unpad Jatinangor</h1>
+    <p>AEROMAP mengubah data 32 titik sensor tersebar di kampus menjadi peta interpolasi spasial interaktif, membantu sivitas akademika memahami dan menghindari paparan polusi udara secara real-time.</p>
+    <div class="hero-actions">
+      <a href="dashboard.html" class="btn-primary">
+        Dashboard
+        <svg width="20" height="14" viewBox="0 0 20 24" fill="none"><path d="M5 12h14m0 0l-6-6m6 6l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a href="#introduction" class="btn-secondary">Pelajari Lebih Lanjut</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><b>32</b><span>Titik Pemantauan</span></div>
+      <div class="hero-stat"><b>LOW COST </b><span>System</span></div>
+      <div class="hero-stat"><b>IDW</b><span>Metode Interpolasi</span></div>
+      <div class="hero-stat"><b>AI</b><span>System Integrated</span></div>
+    </div>
+  </section>
+
+  <!-- ================= 1. INTRODUCTION / PROBLEM ================= -->
+  <section class="block" id="introduction">
+    <div class="block-eyebrow">01 · Introduction</div>
+    <h2 class="block-title">Mengapa PM2.5 Perlu Dipantau di Kampus?</h2>
+    <p class="block-desc">PM2.5 adalah partikel polutan berukuran ≤2.5 mikrometer yang cukup kecil untuk menembus jauh ke dalam saluran pernapasan dan aliran darah. Aktivitas kampus yang padat, lalu lintas kendaraan di jalur sekitar, dan kondisi topografi Jatinangor membuat distribusi PM2.5 tidak merata di seluruh area kampus.</p>
+
+    <div class="intro-grid">
+      <div class="panel intro-copy">
+        <p><b>AEROMAP</b> lahir dari kebutuhan untuk memvisualisasikan sebaran PM2.5 secara spasial, bukan hanya sebagai angka tunggal dari satu titik pengukuran. Dengan 32 sensor yang tersebar di seluruh kampus Unpad Jatinangor, data mentah diinterpolasi menggunakan metode <b>Inverse Distance Weighting (IDW)</b> untuk menghasilkan peta gradasi kualitas udara yang kontinu.</p>
+        <p>Hasilnya adalah dashboard interaktif yang menampilkan heatmap, garis kontur, tren historis, hingga rekomendasi jalur yang meminimalkan paparan polusi bagi pejalan kaki di area kampus.</p>
+        <div class="pm-scale">
+          <div class="pm-row"><span class="pm-swatch" style="background:#2E9E6B"></span><span>Baik</span><span>0–15 µg/m³</span></div>
+          <div class="pm-row"><span class="pm-swatch" style="background:#B7D34A"></span><span>Sedang</span><span>16–35 µg/m³</span></div>
+          <div class="pm-row"><span class="pm-swatch" style="background:#F2A93E"></span><span>Tidak Sehat</span><span>36–55 µg/m³</span></div>
+          <div class="pm-row"><span class="pm-swatch" style="background:#FF5A6E"></span><span>Berbahaya</span><span>&gt;55 µg/m³</span></div>
+        </div>
+      </div>
+
+      <div class="panel problem-card">
+        <div class="stat-carousel" id="statCarousel">
+          <div class="stat-track" id="statTrack">
+            <div class="stat-slide"><img src="DashboardPNG/1.png" alt="Ilustrasi 1" loading="lazy"></div>
+            <div class="stat-slide"><img src="DashboardPNG/2.png" alt="Ilustrasi 2" loading="lazy"></div>
+            <div class="stat-slide"><img src="DashboardPNG/3.png" alt="Ilustrasi 3" loading="lazy"></div>
+            <div class="stat-slide"><img src="DashboardPNG/4.png" alt="Ilustrasi 4" loading="lazy"></div>
+            <div class="stat-slide"><img src="DashboardPNG/5.png" alt="Ilustrasi 5" loading="lazy"></div>
+            <div class="stat-slide"><img src="DashboardPNG/6.png" alt="Ilustrasi 6" loading="lazy"></div>
+            <div class="stat-slide"><img src="DashboardPNG/7.png" alt="Ilustrasi 7" loading="lazy"></div>
+            <div class="stat-slide"><img src="DashboardPNG/8.png" alt="Ilustrasi 8" loading="lazy"></div>
+            <div class="stat-slide"><img src="DashboardPNG/9.png" alt="Ilustrasi 9" loading="lazy"></div>
+            <div class="stat-slide"><img src="DashboardPNG/10.png" alt="Ilustrasi 10" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="fitur">
+    <div class="block-eyebrow">02 · Feature</div>
+    <h2 class="block-title">Fitur yang Ditawarkan</h2>
+    <p class="block-desc">Dashboard AEROMAP dirancang untuk memberikan gambaran menyeluruh dari data mentah hingga rekomendasi tindakan.</p>
+
+    <div class="feature-grid">
+      <div class="panel feature-card">
+        <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2l3 7h7l-5.6 4.3L18 21l-6-4.5L6 21l1.6-7.7L2 9h7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+        <h4>Heatmap Spasial Interaktif</h4>
+        <p>Visualisasi gradasi PM2.5 di seluruh area kampus berbasis interpolasi IDW dari 32 titik sensor.</p>
+      </div>
+      <div class="panel feature-card">
+        <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18M7 15l4-5 3 3 5-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h4>Tren Historis PM2.5</h4>
+        <p>Grafik perkembangan konsentrasi PM2.5, suhu, dan kelembapan dari waktu ke waktu.</p>
+      </div>
+      <div class="panel feature-card">
+        <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a1.5 1.5 0 0 0 1.29 2.25h17.78A1.5 1.5 0 0 0 22.18 18L13.71 3.86a1.5 1.5 0 0 0-2.42 0z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+        <h4>Peringatan Ambang Batas</h4>
+        <p>Notifikasi otomatis saat PM2.5 melewati ambang batas aman ISPU di titik pemantauan utama.</p>
+      </div>
+      <div class="panel feature-card">
+        <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5-2V6l5 2m0 12l6-2m-6 2V8m6 10l5-2V4l-5 2m0 12V6m0 0L9 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h4>Rekomendasi Jalur Aman</h4>
+        <p>Menyarankan jalur berjalan kaki antar titik dengan paparan PM2.5 rata-rata paling rendah.</p>
+      </div>
+      <div class="panel feature-card">
+        <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h4>Ekspor Data & Laporan</h4>
+        <p>Unduh data mentah dalam format CSV atau cetak laporan ringkasan dalam format PDF.</p>
+      </div>
+      <div class="panel feature-card">
+        <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        <h4>Pemantauan Real-Time</h4>
+        <p>Status LIVE dari sensor utama dengan pembaruan berkala tanpa perlu memuat ulang halaman.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="purwarupa">
+    <div class="block-eyebrow">03 · Prototype</div>
+    <h2 class="block-title">Model Prototype Node Sensor</h2>
+    <p class="block-desc">Pratinjau bentuk fisik node sensor AEROMAP. Klik dan seret (drag) gambar untuk memutar sudut pandang secara bebas.</p>
+
+    <div class="proto-grid">
+      <div class="panel proto-stage" id="protoStage">
+        <button class="proto-reset" id="protoReset" title="Reset rotasi">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Reset
+        </button>
+        <div class="proto-card" id="protoCard">
+          <canvas id="protoCanvas"></canvas>
+        </div>
+        <div class="proto-hint" id="protoHint">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h7l-1 8 11-14h-7l1-6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          Seret untuk memutar
+        </div>
+      </div>
+
+      <div class="panel proto-info">
+        <h4>Enclosure Node Sensor v1</h4>
+        <p>Prototype node dikemas dalam enclosure tahan cuaca dengan panel surya di bagian atas untuk catu daya mandiri, layar indikator status, serta port akses untuk kalibrasi lapangan.</p>
+        <div class="proto-spec">
+          <div class="proto-spec-row"><span>Dimensi Perkiraan</span><b>18 × 12 × 24 cm</b></div>
+          <div class="proto-spec-row"><span>Sumber Daya</span><b>Panel Surya + Li-ion</b></div>
+          <div class="proto-spec-row"><span>Indikator</span><b>Layar status + keypad kalibrasi</b></div>
+          <div class="proto-spec-row"><span>Penempatan</span><b>Outdoor, 32 titik kampus</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="hardware">
+    <div class="block-eyebrow">04 · Desain Hardware</div>
+    <h2 class="block-title">Arsitektur Perangkat Sensor</h2>
+    <p class="block-desc">Setiap node sensor dirancang ringkas dan hemat daya agar dapat ditempatkan tersebar di 32 titik kampus tanpa memerlukan infrastruktur kabel yang rumit.</p>
+
+    <div class="hw-grid">
+      <div class="panel hw-diagram">
+        <div class="hw-node"><div class="dot"></div><div><b>Sensor PM2.5 (Laser Scattering)</b><span>Membaca konsentrasi partikulat udara</span></div></div>
+        <div class="hw-arrow">↓ I2C / UART</div>
+        <div class="hw-node"><div class="dot" style="background:var(--hum); box-shadow:0 0 10px rgba(79,198,234,0.6)"></div><div><b>Mikrokontroler ESP32</b><span>Akuisisi, timestamping, kompresi data</span></div></div>
+        <div class="hw-arrow">↓ WiFi / MQTT</div>
+        <div class="hw-node"><div class="dot" style="background:var(--pm); box-shadow:0 0 10px rgba(242,169,62,0.6)"></div><div><b>Gateway / Server Data</b><span>Menyimpan & meneruskan data ke pipeline IDW</span></div></div>
+        <div class="hw-arrow">↓</div>
+        <div class="hw-node"><div class="dot" style="background:#FF5A6E; box-shadow:0 0 10px rgba(255,90,110,0.6)"></div><div><b>Dashboard AEROMAP</b><span>Visualisasi peta & analitik</span></div></div>
+      </div>
+
+      <div class="panel">
+        <ul class="hw-spec-list">
+          <li><span>Sensor</span><b>Laser PM2.5 (optical scattering)</b></li>
+          <li><span>Mikrokontroler</span><b>ESP32 (WiFi + BLE)</b></li>
+          <li><span>Catu Daya</span><b>Baterai Li-ion + panel surya kecil</b></li>
+          <li><span>Interval Pengiriman</span><b>Berkala (menit)</b></li>
+          <li><span>Protokol Komunikasi</span><b>WiFi / MQTT</b></li>
+          <li><span>Jumlah Node Terpasang</span><b>32 titik sebaran kampus</b></li>
+          <li><span>Casing</span><b>Enclosure tahan cuaca outdoor</b></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="tech-stack">
+    <div class="block-eyebrow">05 · Tech Stack</div>
+    <h2 class="block-title">Teknologi yang Digunakan</h2>
+    <p class="block-desc">Kombinasi hardware embedded, pipeline data science, dan frontend interaktif untuk mengubah sinyal sensor mentah menjadi peta kualitas udara yang dapat ditindaklanjuti.</p>
+
+    <div class="stack-grid">
+      <div class="panel stack-card">
+        <div class="stack-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M9 9h6v6H9z" stroke="currentColor" stroke-width="1.8"/></svg>
+        </div>
+        <h4>ESP32 + Sensor PM2.5</h4>
+        <p>Node akuisisi data di tiap titik sampling, membaca konsentrasi partikulat dan mengirim data secara berkala.</p>
+        <span class="stack-tag">Embedded / IoT</span>
+      </div>
+
+      <div class="panel stack-card">
+        <div class="stack-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 17l6-6-6-6M12 19h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h4>Python + Google Colab</h4>
+        <p>Pipeline pengolahan data: interpolasi IDW, smoothing, clipping, dan generasi heatmap/kontur dari 32 titik sensor.</p>
+        <span class="stack-tag">NumPy · SciPy · Pandas</span>
+      </div>
+
+      <div class="panel stack-card">
+        <div class="stack-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M4 12h16M12 4a14 14 0 010 16 14 14 0 010-16z" stroke="currentColor" stroke-width="1.8"/></svg>
+        </div>
+        <h4>Folium + Leaflet</h4>
+        <p>Rendering peta interaktif berbasis tile OpenStreetMap dengan layer heatmap raster dan kontur GeoJSON.</p>
+        <span class="stack-tag">Geospatial Visualization</span>
+      </div>
+
+      <div class="panel stack-card">
+        <div class="stack-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 12h4l3-9 4 18 3-9h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h4>HTML / JS / Chart.js</h4>
+        <p>Dashboard frontend single-file dengan grafik tren real-time, kartu ringkasan, dan ekspor laporan.</p>
+        <span class="stack-tag">Frontend</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="tim" style="padding-bottom:78px;">
+    <div class="block-eyebrow">06 · Tim</div>
+    <h2 class="block-title">Tim Pengembang</h2>
+    <p class="block-desc">Proyek ini dikembangkan oleh 3 anggota mahasiswa di bawah bimbingan 1 dosen pembimbing.</p>
+
+    <div class="team-grid">
+      <div class="panel team-card">
+        <div class="team-avatar"><span>A1</span></div>
+        <h4>Nama Anggota 1</h4>
+        <div class="team-role">Ketua Tim</div>
+        <p class="team-desc">Pengembangan sistem akuisisi data & embedded hardware.</p>
+      </div>
+      <div class="panel team-card">
+        <div class="team-avatar"><span>A2</span></div>
+        <h4>Nama Anggota 2</h4>
+        <div class="team-role">Data Analyst</div>
+        <p class="team-desc">Pipeline interpolasi spasial & pengolahan data PM2.5.</p>
+      </div>
+      <div class="panel team-card">
+        <div class="team-avatar"><span>A3</span></div>
+        <h4>Nama Anggota 3</h4>
+        <div class="team-role">Frontend Developer</div>
+        <p class="team-desc">Desain & pengembangan dashboard interaktif.</p>
+      </div>
+      <div class="panel team-card supervisor">
+        <div class="team-avatar"><span>DP</span></div>
+        <h4>Nama Dosen Pembimbing</h4>
+        <div class="team-role">Pembimbing</div>
+        <p class="team-desc">Membimbing arah riset & validasi metodologi.</p>
+      </div>
+    </div>
+  </section>
+
+
+  <footer>
+    <span>© 2026 AEROMAP · Sistem Pemantauan Kualitas Udara Kampus Unpad Jatinangor</span>
+    <span>Dibuat oleh Tim AEROMAP</span>
+  </footer>
+
+</div>
+
+
+<script>
+(function(){
+  const track = document.getElementById('statTrack');
+  const carousel = document.getElementById('statCarousel');
+  if(!track) return;
+
+  const slides = Array.from(track.children);
+  let index = 0;
+  let autoplayTimer = null;
+  const AUTOPLAY_MS = 2500;
+
+  function update(){
+    slides.forEach((s, i) => s.classList.toggle('active', i === index));
+  }
+
+  function goTo(i){
+    index = (i + slides.length) % slides.length;
+    update();
+    restartAutoplay();
+  }
+
+  function next(){ goTo(index + 1); }
+  function prev(){ goTo(index - 1); }
+
+  function startAutoplay(){
+    autoplayTimer = setInterval(next, AUTOPLAY_MS);
+  }
+  function restartAutoplay(){
+    clearInterval(autoplayTimer);
+    startAutoplay();
+  }
+
+  carousel.addEventListener('mouseenter', () => clearInterval(autoplayTimer));
+  carousel.addEventListener('mouseleave', startAutoplay);
+
+  // Swipe support
+  let startX = 0, isDown = false;
+  carousel.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    isDown = true;
+  }, {passive:true});
+  carousel.addEventListener('touchend', e => {
+    if(!isDown) return;
+    isDown = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    if(Math.abs(dx) > 40){ dx < 0 ? next() : prev(); }
+  });
+
+  update();
+  startAutoplay();
+})();
+</script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+
+const stage  = document.getElementById('protoStage');
+const canvas = document.getElementById('protoCanvas');
+const hint   = document.getElementById('protoHint');
+const resetBtn = document.getElementById('protoReset');
+
+// --- scene setup ---
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+camera.position.set(0, 0, 10);
+
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+const card = document.getElementById('protoCard');
+function resize(){
+  const w = card.clientWidth, h = card.clientHeight;
+  if (w === 0 || h === 0) return; // jangan resize kalau elemen belum punya ukuran
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+
+// --- lighting ---
+scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+const dir = new THREE.DirectionalLight(0xffffff, 1.5);
+dir.position.set(3, 5, 4);
+scene.add(dir);
+const dir2 = new THREE.DirectionalLight(0xffffff, 0.8);
+dir2.position.set(-3, -2, -4);
+scene.add(dir2);
+
+// --- object group (ini yang kita putar drag) ---
+const objGroup = new THREE.Group();
+scene.add(objGroup);
+
+// --- load model (.mtl dulu, baru .obj) ---
+new MTLLoader()
+  .setPath('AEROMAP-NODEPOINTS/')
+  .load('obj.mtl', 
+    (materials) => {
+      materials.preload();
+      new OBJLoader()
+        .setMaterials(materials)
+        .setPath('AEROMAP-NODEPOINTS/')
+        .load('tinker.obj', 
+          (obj) => {
+            console.log('OBJ berhasil dimuat:', obj);
+            // Hitung ukuran asli dulu
+            const rawBox = new THREE.Box3().setFromObject(obj);
+            const rawSize = rawBox.getSize(new THREE.Vector3());
+            const maxDim = rawSize.length();;
+
+            // Scale dulu ke ukuran target
+            obj.scale.setScalar(2 / maxDim);
+
+            // Baru hitung ulang box (sudah dalam skala final) untuk centering posisi
+            const box = new THREE.Box3().setFromObject(obj);
+            const center = box.getCenter(new THREE.Vector3());
+            obj.position.sub(center);
+            
+            objGroup.add(obj);
+            obj.traverse((child) => {
+              if (child.isMesh && child.material) {
+                const oldMat = child.material;
+                const color = oldMat.color ? oldMat.color.clone() : new THREE.Color(0xcccccc);
+                child.material = new THREE.MeshStandardMaterial({
+                  color: color,
+                  roughness: 0.6,
+                  metalness: 0.1,
+                  side: THREE.DoubleSide
+                });
+              }
+            });
+            resize();
+            const fitOffset = 1.4;
+            const fovRad = camera.fov * (Math.PI / 180);
+                      
+            // FOV vertikal
+            const distV = (2 * fitOffset) / (2 * Math.tan(fovRad / 2));
+                      
+            // FOV horizontal (dikoreksi pakai aspect ratio canvas)
+            const fovHRad = 2 * Math.atan(Math.tan(fovRad / 2) * camera.aspect);
+            const distH = (2 * fitOffset) / (2 * Math.tan(fovHRad / 2));
+                      
+            // Ambil jarak terbesar supaya objek muat di kedua sisi (vertikal & horizontal)
+            const distance = Math.max(distV, distH);
+                      
+            camera.position.set(0, 0, distance);
+            camera.near = distance / 100;
+            camera.far = distance * 100;
+            camera.updateProjectionMatrix();
+          },
+          (xhr) => console.log('OBJ progress:', (xhr.loaded / xhr.total * 100).toFixed(0) + '%'),
+          (err) => console.error('GAGAL load OBJ:', err)
+        );
+    },
+    (xhr) => console.log('MTL progress:', (xhr.loaded / xhr.total * 100).toFixed(0) + '%'),
+    (err) => console.error('GAGAL load MTL:', err)
+  );
+
+// --- drag to rotate (sama logikanya seperti card CSS Anda sebelumnya) ---
+let dragging = false, lastX = 0, lastY = 0;
+let rotY = -0.3, rotX = 0.14; // rotasi awal, mirip rotateX(8deg) rotateY(-18deg)
+
+function applyRotation(){
+  objGroup.rotation.set(rotX, rotY, 0);
+}
+applyRotation();
+
+function onDown(e){
+  dragging = true;
+  stage.classList.add('dragging');
+  hint.style.opacity = '0';
+  const p = e.touches ? e.touches[0] : e;
+  lastX = p.clientX; lastY = p.clientY;
+}
+function onMove(e){
+  if(!dragging) return;
+  const p = e.touches ? e.touches[0] : e;
+  const dx = p.clientX - lastX, dy = p.clientY - lastY;
+  lastX = p.clientX; lastY = p.clientY;
+  rotY += dx * 0.008;
+  rotX += dy * 0.008;
+  applyRotation();
+}
+function onUp(){
+  dragging = false;
+  stage.classList.remove('dragging');
+}
+
+stage.addEventListener('mousedown', onDown);
+window.addEventListener('mousemove', onMove);
+window.addEventListener('mouseup', onUp);
+stage.addEventListener('touchstart', onDown, { passive:true });
+window.addEventListener('touchmove', onMove, { passive:true });
+window.addEventListener('touchend', onUp);
+
+resetBtn.addEventListener('click', () => {
+  rotY = -0.3; rotX = 0.14;
+  zoom = 1;
+  objGroup.scale.setScalar(zoom);
+  applyRotation();
+});
+// ↑ addEventListener resetBtn DITUTUP di sini dulu
+
+// --- zoom dengan scroll wheel ---
+let zoom = 1;
+const MIN_ZOOM = 0.5, MAX_ZOOM = 3;
+
+stage.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  zoom += e.deltaY * -0.001;
+  zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
+  objGroup.scale.setScalar(zoom);
+}, { passive: false });
+
+// --- zoom dengan pinch (2 jari) di touch ---
+let lastPinchDist = null;
+
+function getPinchDist(touches){
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.hypot(dx, dy);
+}
+
+stage.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) lastPinchDist = getPinchDist(e.touches);
+}, { passive: true });
+
+stage.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 2) {
+    const dist = getPinchDist(e.touches);
+    if (lastPinchDist) {
+      zoom += (dist - lastPinchDist) * 0.005;
+      zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
+      objGroup.scale.setScalar(zoom);
+    }
+    lastPinchDist = dist;
+  }
+}, { passive: true });
+
+stage.addEventListener('touchend', (e) => {
+  if (e.touches.length < 2) lastPinchDist = null;
+});
+
+// --- render loop ---
+function animate(){
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+
+requestAnimationFrame(() => {
+  resize();
+  animate();
+});
+</script>
+</body>
+</html>
